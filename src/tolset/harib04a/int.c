@@ -1,5 +1,3 @@
-/* Š„‚è‚İŠÖŒW */
-
 #include "bootpack.h"
 #include <stdio.h>
 
@@ -27,29 +25,27 @@ void init_pic(void)
 
 #define PORT_KEYDAT		0x0060
 
-struct KEYBUF keybuf;
+struct FIFO8 keyfifo;//???™t‹æ
 
-void inthandler21(int *esp)
+void inthandler21(int *esp)//??’†’f?—
 {
 	unsigned char data;
-	io_out8(PIC0_OCW2, 0x61);	/* IRQ-01ó•tŠ®—¹‚ğPIC‚É’Ê’m */
+	io_out8(PIC0_OCW2, 0x61);	/* ?nÚó’†’f */
 	data = io_in8(PORT_KEYDAT);
-	if (keybuf.flag == 0) {
-		keybuf.data = data;
-		keybuf.flag = 1;
-	}
+	fifo8_put(&keyfifo,data);
 	return;
 }
 
-void inthandler2c(int *esp)
-/* PS/2ƒ}ƒEƒX‚©‚ç‚ÌŠ„‚è‚İ */
+struct FIFO8 mousefifo;//‘l??™t‹æ
+
+void inthandler2c(int *esp)//‘l?’†’f?—
 {
-	struct BOOTINFO *binfo = (struct BOOTINFO *) ADR_BOOTINFO;
-	boxfill8(binfo->vram, binfo->scrnx, COL8_000000, 0, 0, 32 * 8 - 1, 15);
-	putfonts8_asc(binfo->vram, binfo->scrnx, 0, 0, COL8_FFFFFF, "INT 2C (IRQ-12) : PS/2 mouse");
-	for (;;) {
-		io_hlt();
-	}
+	unsigned char data;
+	io_out8(PIC1_OCW2, 0x64);	/* IRQ-12ó•tŠ®—¹‚ğPIC1‚É’Ê’m */
+	io_out8(PIC0_OCW2, 0x62);	/* IRQ-02ó•tŠ®—¹‚ğPIC0‚É’Ê’m */
+	data = io_in8(PORT_KEYDAT);
+	fifo8_put(&mousefifo, data);
+	return;
 }
 
 void inthandler27(int *esp)
