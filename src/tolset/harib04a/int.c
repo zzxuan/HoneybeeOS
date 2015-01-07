@@ -23,30 +23,7 @@ void init_pic(void)
 	return;
 }
 
-#define PORT_KEYDAT		0x0060
 
-struct FIFO8 keyfifo;//???™t‹æ
-
-void inthandler21(int *esp)//??’†’f?—
-{
-	unsigned char data;
-	io_out8(PIC0_OCW2, 0x61);	/* ?nÚó’†’f */
-	data = io_in8(PORT_KEYDAT);
-	fifo8_put(&keyfifo,data);
-	return;
-}
-
-struct FIFO8 mousefifo;//‘l??™t‹æ
-
-void inthandler2c(int *esp)//‘l?’†’f?—
-{
-	unsigned char data;
-	io_out8(PIC1_OCW2, 0x64);	/* IRQ-12ó•tŠ®—¹‚ğPIC1‚É’Ê’m */
-	io_out8(PIC0_OCW2, 0x62);	/* IRQ-02ó•tŠ®—¹‚ğPIC0‚É’Ê’m */
-	data = io_in8(PORT_KEYDAT);
-	fifo8_put(&mousefifo, data);
-	return;
-}
 
 void inthandler27(int *esp)
 {

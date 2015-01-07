@@ -23,6 +23,9 @@ void load_idtr(int limit, int addr);
 void asm_inthandler21(void);
 void asm_inthandler27(void);
 void asm_inthandler2c(void);
+int load_cr0(void);
+void store_cr0(int cr0);
+unsigned int memtest_sub(unsigned int start, unsigned int end);
 
 //fifo.c
 struct FIFO8{
@@ -104,3 +107,28 @@ void inthandler2c(int *esp);
 #define PIC1_ICW2		0x00a1
 #define PIC1_ICW3		0x00a1
 #define PIC1_ICW4		0x00a1
+
+
+//keyboard.c
+
+#define PORT_KEYDAT				0x0060
+#define PORT_KEYSTA				0x0064
+#define PORT_KEYCMD				0x0064
+#define KEYSTA_SEND_NOTREADY	0x02
+#define KEYCMD_WRITE_MODE		0x60
+#define KBC_MODE				0x47
+
+void init_keyboard(void);
+
+//mouse.c
+struct MOUSE_DEC{
+	unsigned char buf[3],phase;
+	int x,y,btn;
+};
+void enable_mouse(struct MOUSE_DEC *mdec);
+
+int mouse_decode(struct MOUSE_DEC *mdec,unsigned char dat);
+#define KEYCMD_SENDTO_MOUSE		0xd4
+#define MOUSECMD_ENABLE			0xf4
+
+

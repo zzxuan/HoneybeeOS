@@ -3,17 +3,8 @@
 
 extern struct FIFO8 keyfifo, mousefifo;
 
-struct MOUSE_DEC{
-	unsigned char buf[3],phase;
-	int x,y,btn;
-};
-
-
-void enable_mouse(struct MOUSE_DEC *mdec);
-
-int mouse_decode(struct MOUSE_DEC *mdec,unsigned char dat);
-
-void init_keyboard(void);
+unsigned int memtest(unsigned int start,unsigned int end);//内存检测
+//unsigned int memtest_sub(unsigned int start,unsigned int end);
 
 void HariMain(void)
 {
@@ -24,24 +15,29 @@ void HariMain(void)
 	init_gdtidt();
 	init_pic();
 	io_sti(); 
-
-	fifo8_init(&keyfifo,32,keybuf);//弶巒壔???檛嬫
-	fifo8_init(&mousefifo, 128, mousebuf);//弶巒壔憀??檛嬫
-	io_out8(PIC0_IMR, 0xf9); /* PIC ???壜乮11111001乯?壜*/
-	io_out8(PIC1_IMR, 0xef); /* PIC憀??壜(11101111) */
-	init_keyboard();//弶巒壔??
+	/********键盘与鼠标设置***************************/
+	fifo8_init(&keyfifo,32,keybuf);//
+	fifo8_init(&mousefifo, 128, mousebuf);//嬫
+	io_out8(PIC0_IMR, 0xf9); /* PIC设置键盘与鼠标*/
+	io_out8(PIC1_IMR, 0xef); 
+	init_keyboard();//初始化键盘
 
 	init_palette();
 	init_screen8(binfo->vram, binfo->scrnx, binfo->scrny);
-	mx = (binfo->scrnx - 16) / 2; /* 夋柺拞墰嵖??嶼 */
+	mx = (binfo->scrnx - 16) / 2;//鼠标坐标
 	my = (binfo->scrny - 28 - 16) / 2;
 	init_mouse_cursor8(mcursor, COL8_008484);
 	putblock8_8(binfo->vram, binfo->scrnx, 16, 16, mx, my, mcursor, 16);
 	sprintf(s, "(%d, %d)", mx, my);
 	putfonts8_asc(binfo->vram, binfo->scrnx, 0, 0, COL8_FFFFFF, s);
 	
-	struct MOUSE_DEC mdec;//憀?悢悩
-	enable_mouse(&mdec);//寖妶憀?
+	struct MOUSE_DEC mdec;//鼠标缓冲区
+	enable_mouse(&mdec);//初始化鼠标
+	
+	//******************检测内存**************************
+	i=memtest(0x00400000,0xbfffffff)/(1024*1024);
+	sprintf(s,"memory %dMB",i);
+	putfonts8_asc(binfo->vram, binfo->scrnx, 0, 32, COL8_FFFFFF, s);
 	
 	for (;;) {
 		io_cli();
@@ -57,7 +53,7 @@ void HariMain(void)
 			} else if (fifo8_status(&mousefifo) != 0) {
 				i = fifo8_get(&mousefifo);
 				io_sti();
-				if(mouse_decode(&mdec,i)==1)//愙澗姰憀?悢悩
+				if(mouse_decode(&mdec,i)==1)//接收完鼠标数据
 				{
 					//sprintf(s,"%02X %02X %02X",mdec.buf[0],mdec.buf[1],mdec.buf[2]);
 					sprintf(s,"[lcr %4d %4d]",mdec.x,mdec.y);
@@ -94,9 +90,9 @@ void HariMain(void)
 					
 					sprintf(s,"(%3d %3d)",mx,my);
 					boxfill8(binfo->vram, binfo->scrnx, COL8_008484,  0, 0, 79, 15);
-					putfonts8_asc(binfo->vram, binfo->scrnx, 0, 0, COL8_FFFFFF, s);//?帵嵖??
+					putfonts8_asc(binfo->vram, binfo->scrnx, 0, 0, COL8_FFFFFF, s);//显示坐标
 					
-					putblock8_8(binfo->vram, binfo->scrnx, 16, 16, mx, my, mcursor, 16);
+					putblock8_8(binfo->vram, binfo->scrnx, 16, 16, mx, my, mcursor, 16);//绘制鼠标
 				}
 				
 			}
@@ -104,80 +100,74 @@ void HariMain(void)
 	}
 }
 
-#define PORT_KEYDAT				0x0060
-#define PORT_KEYSTA				0x0064
-#define PORT_KEYCMD				0x0064
-#define KEYSTA_SEND_NOTREADY	0x02
-#define KEYCMD_WRITE_MODE		0x60
-#define KBC_MODE				0x47
+#define EFLAGS_AC_BIT		0x00040000
+#define CR0_CACHE_DISABLE	0x60000000
 
-void wait_KBC_sendready(void)//摍懸??峊惂?楬弝?姰?
+unsigned int memtest(unsigned int start,unsigned int end)//内存检测
 {
-	while(1)
-	{
-		if((io_in8(PORT_KEYSTA) & KEYSTA_SEND_NOTREADY)==0){
+	char flg486=0;
+	unsigned int eflg,cr0,i;
+	//判断CPU是386还是486以上
+	eflg = io_load_eflags();
+	eflg |=EFLAGS_AC_BIT;
+	io_store_eflags(eflg);
+	
+	eflg = io_load_eflags();
+	
+	if((eflg&EFLAGS_AC_BIT)!=0){
+		flg486 = 1;
+	}
+	eflg &= ~EFLAGS_AC_BIT;
+	
+	io_store_eflags(eflg);
+	
+	if(flg486!=0){
+		cr0 = load_cr0();
+		cr0 |= CR0_CACHE_DISABLE; //禁止高速缓存
+		store_cr0(cr0);
+	}
+	
+	i= memtest_sub(start,end);
+	
+	if(flg486!=0){
+		cr0 = load_cr0();
+		cr0 &= ~CR0_CACHE_DISABLE; //允许高速缓存
+		store_cr0(cr0);
+	}
+	
+	return i;
+}
+/*
+unsigned int memtest_sub(unsigned int start,unsigned int end)
+{
+	unsigned int i,*p,old,pat0 = 0xaa55aa55,pat1=0x55aa55aa;
+	for(i=start;i<=end;i+=0x1000){
+		p=(unsigned int *)(i + 0xffc);//检测末尾4个字节
+		old = *p; 
+		*p=pat0;
+		*p ^= 0xffffffff;//反转
+		
+		if(*p!=pat1){
+	not_memory:
+			*p=old;
 			break;
 		}
-	}
-	return;
-}
-
-void init_keyboard(void){
-	wait_KBC_sendready();
-	io_out8(PORT_KEYCMD,KEYCMD_WRITE_MODE);
-	wait_KBC_sendready();
-	io_out8(PORT_KEYDAT, KBC_MODE);
-	return;
-}
-#define KEYCMD_SENDTO_MOUSE		0xd4
-#define MOUSECMD_ENABLE			0xf4
-
-void enable_mouse(struct MOUSE_DEC *mdec)//寖妶憀?
-{
-	wait_KBC_sendready();
-	io_out8(PORT_KEYCMD, KEYCMD_SENDTO_MOUSE);
-	wait_KBC_sendready();
-	io_out8(PORT_KEYDAT, MOUSECMD_ENABLE);
-	
-	mdec->phase=0;
-	return; 
-}
-
-int mouse_decode(struct MOUSE_DEC *mdec,unsigned char dat)
-{
-	if(mdec->phase==0){
-		if(dat==0xfa){
-			mdec->phase=1;
-		}
-	} else if(mdec->phase==1){
-		if((dat&0xc8)==0x08){//敾抐戞堦槩帤晞惓?
-			mdec->buf[0]=dat;
-			mdec->phase=2;
-		}
-	}else if(mdec->phase==2){
-		mdec->buf[1]=dat;
-		mdec->phase=3;
-	}else if(mdec->phase==3){
-		mdec->buf[2]=dat;
-		mdec->phase=1;
 		
-		mdec->btn=mdec->buf[0]&0x07;
-		mdec->x=mdec->buf[1];
-		mdec->y=mdec->buf[2];
+		*p ^= 0xffffffff;//反转
 		
-		if((mdec->buf[0]&0x10)!=0){
-			mdec->x|=0xffffff00;
+		if(*p!=pat0){
+			goto not_memory;
 		}
-		if((mdec->buf[0]&0x20)!=0){
-			mdec->y|=0xffffff00;
-		}
-		mdec->y=-mdec->y;
-		return 1;
-	}else{
-		return -1;//?忢
+		
+		*p = old;
 	}
-	return 0;
-}
+	return i;
+}*/
+
+
+
+
+
 
 
 
