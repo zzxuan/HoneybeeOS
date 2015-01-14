@@ -1,31 +1,37 @@
 #include "bootpack.h"
 #include <stdio.h>
 
-extern struct FIFO8 keyfifo, mousefifo;
-
 void make_window8(unsigned char *buf, int xsize, int ysize, char *title);
 
 void HariMain(void)
 {
 	struct BOOTINFO *binfo = (struct BOOTINFO *) ADR_BOOTINFO;
-	char s[40], mcursor[256],keybuf[32],mousebuf[128];
+	char s[40], mcursor[256],keybuf[32],mousebuf[128],timerbuf[8];
 	int mx, my,i;
 	unsigned int memtotal,count=0;
 	struct SHTCTL *shtctl;
 	struct SHEET *sht_back,*sht_mouse,*sht_win;
 	unsigned char *buf_back,buf_mouse[256],*buf_win;
-
+	struct FIFO8 timerfifo;
+	
 	init_gdtidt();
 	init_pic();
 	io_sti(); 
 	/********键盘与鼠标设置***************************/
 	fifo8_init(&keyfifo,32,keybuf);//
 	fifo8_init(&mousefifo, 128, mousebuf);//嬫
-	io_out8(PIC0_IMR, 0xf9); /* PIC设置键盘与鼠标*/
-	io_out8(PIC1_IMR, 0xef); 
+	fifo8_init(&timerfifo,8,timerbuf);
+	
+	
+	init_pit();
+	io_out8(PIC0_IMR, 0xf8); /* PIT,PIC1设置键盘为许可(11111000)*/
+	io_out8(PIC1_IMR, 0xef); //鼠标设置为许可(11101111)
 	init_keyboard();//初始化键盘
 	struct MOUSE_DEC mdec;//鼠标缓冲区
 	enable_mouse(&mdec);//初始化鼠标
+	
+
+	settimer(1000,&timerfifo,1);
 		
 	//******************内存**************************
 	struct MEMMAN *memman = (struct MEMMAN *) MEMMAN_ADDR;
@@ -71,15 +77,14 @@ void HariMain(void)
 	
 	for (;;) {
 		//******计数**************
-		count++;
-		sprintf(s,"%010d",count);
+		sprintf(s,"%010d",timerctl.count);
 		boxfill8(buf_win, 160,COL8_C6C6C6,  40, 28, 119, 43);
 		putfonts8_asc(buf_win,160, 40, 28, COL8_000000, s);
 		sheet_refresh(sht_win,40, 28, 120, 44);//刷新
 		//************************
 		
 		io_cli();
-		if (fifo8_status(&keyfifo) + fifo8_status(&mousefifo) == 0) {
+		if (fifo8_status(&keyfifo) + fifo8_status(&mousefifo) + fifo8_status(&timerfifo) == 0) {
 			//io_stihlt();
 			io_sti();
 		} else {
@@ -101,10 +106,10 @@ void HariMain(void)
 						s[1]='L';
 					}
 					if((mdec.btn&0x02)!=0){
-						s[1]='R';
+						s[3]='R';
 					}
 					if((mdec.btn&0x04)!=0){
-						s[1]='C';
+						s[2]='C';
 					}
 					
 					
@@ -134,6 +139,11 @@ void HariMain(void)
 					sheet_slide(sht_mouse, mx, my);
 				}
 				
+			} else if (fifo8_status(&timerfifo) != 0) {
+				i = fifo8_get(&timerfifo);
+				io_sti();
+				putfonts8_asc(buf_back, binfo->scrnx, 0, 64, COL8_FFFFFF, "10[sec]");
+				sheet_refresh(sht_back,0,64,56,80);//刷新
 			}
 		}
 	}

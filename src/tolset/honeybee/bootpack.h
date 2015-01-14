@@ -23,6 +23,7 @@ void load_idtr(int limit, int addr);
 void asm_inthandler21(void);
 void asm_inthandler27(void);
 void asm_inthandler2c(void);
+void asm_inthandler20(void);
 int load_cr0(void);
 void store_cr0(int cr0);
 unsigned int memtest_sub(unsigned int start, unsigned int end);
@@ -125,6 +126,9 @@ struct MOUSE_DEC{
 	unsigned char buf[3],phase;
 	int x,y,btn;
 };
+
+extern struct FIFO8 keyfifo, mousefifo;
+
 void enable_mouse(struct MOUSE_DEC *mdec);
 
 int mouse_decode(struct MOUSE_DEC *mdec,unsigned char dat);
@@ -176,4 +180,16 @@ void sheet_refresh(struct SHEET *sht,int bx0,int by0,int bx1,int by1);
 void sheet_refreshsub(struct SHTCTL *ctl,int vx0,int vy0,int vx1,int vy1,int h0,int h1);
 void sheet_refreshmap(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1,int h0);
 
+//timer.c
+void init_pit(void);
+void inthandler20(int *esp);
 
+struct TIMERCTL{
+	unsigned int count;
+	unsigned int timeout;
+	struct FIFO8 *fifo;
+	unsigned char data;
+};
+
+extern struct TIMERCTL timerctl;
+void settimer(unsigned int timeout,struct FIFO8 *fifo,unsigned char data);
