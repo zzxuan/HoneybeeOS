@@ -28,17 +28,15 @@ int load_cr0(void);
 void store_cr0(int cr0);
 unsigned int memtest_sub(unsigned int start, unsigned int end);
 
-//fifo.c
-struct FIFO8{
-	unsigned char *buf;
-	int p,q,size,free,flags;
+/* fifo.c */
+struct FIFO32 {
+	int *buf;
+	int p, q, size, free, flags;
 };
-
-void fifo8_init(struct FIFO8 *fifo,int size,unsigned char *buf);//èâénâª?ôtãÊ
-int fifo8_put(struct FIFO8 *fifo,unsigned char data);//??ôtãÊé êîêò
-int fifo8_get(struct FIFO8 *fifo);//ò∏?ôtãÊ?êîêò
-int fifo8_status(struct FIFO8 *fifo);//?ôtãÊôîó]êîêò
-
+void fifo32_init(struct FIFO32 *fifo, int size, int *buf);
+int fifo32_put(struct FIFO32 *fifo, int data);
+int fifo32_get(struct FIFO32 *fifo);
+int fifo32_status(struct FIFO32 *fifo);
 
 /* graphic.c */
 void init_palette(void);
@@ -109,31 +107,21 @@ void inthandler2c(int *esp);
 #define PIC1_ICW3		0x00a1
 #define PIC1_ICW4		0x00a1
 
+/* keyboard.c */
+void inthandler21(int *esp);
+void wait_KBC_sendready(void);
+void init_keyboard(struct FIFO32 *fifo, int data0);
+#define PORT_KEYDAT		0x0060
+#define PORT_KEYCMD		0x0064
 
-//keyboard.c
-
-#define PORT_KEYDAT				0x0060
-#define PORT_KEYSTA				0x0064
-#define PORT_KEYCMD				0x0064
-#define KEYSTA_SEND_NOTREADY	0x02
-#define KEYCMD_WRITE_MODE		0x60
-#define KBC_MODE				0x47
-
-void init_keyboard(void);
-
-//mouse.c
-struct MOUSE_DEC{
-	unsigned char buf[3],phase;
-	int x,y,btn;
+/* mouse.c */
+struct MOUSE_DEC {
+	unsigned char buf[3], phase;
+	int x, y, btn;
 };
-
-extern struct FIFO8 keyfifo, mousefifo;
-
-void enable_mouse(struct MOUSE_DEC *mdec);
-
-int mouse_decode(struct MOUSE_DEC *mdec,unsigned char dat);
-#define KEYCMD_SENDTO_MOUSE		0xd4
-#define MOUSECMD_ENABLE			0xf4
+void inthandler2c(int *esp);
+void enable_mouse(struct FIFO32 *fifo, int data0, struct MOUSE_DEC *mdec);
+int mouse_decode(struct MOUSE_DEC *mdec, unsigned char dat);
 
 //memery.c
 #define MEMMAN_FREES		4090
@@ -180,19 +168,17 @@ void sheet_refresh(struct SHEET *sht,int bx0,int by0,int bx1,int by1);
 void sheet_refreshsub(struct SHTCTL *ctl,int vx0,int vy0,int vx1,int vy1,int h0,int h1);
 void sheet_refreshmap(struct SHTCTL *ctl, int vx0, int vy0, int vx1, int vy1,int h0);
 
-//timer.c
-#define MAX_TIMER	500
-
-struct TIMER{
-	unsigned int timeout,flags;
-	struct FIFO8 *fifo;
-	unsigned char data;
+/* timer.c */
+#define MAX_TIMER		500
+struct TIMER {
+	struct TIMER *next;
+	unsigned int timeout, flags;
+	struct FIFO32 *fifo;
+	int data;
 };
-
-//??ä«óù
-struct TIMERCTL{
-	unsigned int count,next,using;
-	struct TIMER *timers[MAX_TIMER];
+struct TIMERCTL {
+	unsigned int count, next, using;
+	struct TIMER *t0;
 	struct TIMER timers0[MAX_TIMER];
 };
 
@@ -200,6 +186,6 @@ extern struct TIMERCTL timerctl;
 void init_pit(void);
 struct TIMER *timer_alloc(void);
 void timer_free(struct TIMER *timer);
-void timer_init(struct TIMER *timer, struct FIFO8 *fifo, unsigned char data);
+void timer_init(struct TIMER *timer, struct FIFO32 *fifo, int data);
 void timer_settime(struct TIMER *timer, unsigned int timeout);
 void inthandler20(int *esp);

@@ -2,7 +2,8 @@
 //#include <stdio.h>
 #define FLAGS_OVERRUN       0x0001
 
-void fifo8_init(struct FIFO8 *fifo,int size,unsigned char *buf)//初始化缓冲区
+void fifo32_init(struct FIFO32 *fifo, int size, int *buf)
+//初始化缓冲区
 {
 	fifo->size=size;
 	fifo->buf=buf;
@@ -13,7 +14,7 @@ void fifo8_init(struct FIFO8 *fifo,int size,unsigned char *buf)//初始化缓冲区
 	return;
 }
 
-int fifo8_put(struct FIFO8 *fifo,unsigned char data)//给缓冲区写数据
+int fifo32_put(struct FIFO32 *fifo, int data)//给缓冲区写数据
 {
 	if(fifo->free==0){
 		fifo->flags |= FLAGS_OVERRUN;//溢出
@@ -28,7 +29,7 @@ int fifo8_put(struct FIFO8 *fifo,unsigned char data)//给缓冲区写数据
 	return 0;
 }
 
-int fifo8_get(struct FIFO8 *fifo)//从缓冲区读数据
+int fifo32_get(struct FIFO32 *fifo)//从缓冲区读数据
 {
 	int data;
 	if(fifo->free==fifo->size){
@@ -44,7 +45,7 @@ int fifo8_get(struct FIFO8 *fifo)//从缓冲区读数据
 	
 }
 
-int fifo8_status(struct FIFO8 *fifo)//缓冲区剩余数据
+int fifo32_status(struct FIFO32 *fifo)//缓冲区剩余数据
 {
 	return fifo->size - fifo->free;
 }

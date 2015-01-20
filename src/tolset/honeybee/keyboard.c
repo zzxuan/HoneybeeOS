@@ -3,18 +3,24 @@
 
 #define PORT_KEYDAT		0x0060
 
-struct FIFO8 keyfifo;//键盘缓冲区
+struct FIFO32 *keyfifo;
+int keydata0;
 
 void inthandler21(int *esp)//??中断?理
 {
-	unsigned char data;
+	int data;
 	io_out8(PIC0_OCW2, 0x61);	/* ?始接受中断 */
 	data = io_in8(PORT_KEYDAT);
-	fifo8_put(&keyfifo,data);
+	fifo32_put(keyfifo, data + keydata0);
 	return;
 }
 
-void wait_KBC_sendready(void)//等待键盘准备
+#define PORT_KEYSTA				0x0064
+#define KEYSTA_SEND_NOTREADY	0x02
+#define KEYCMD_WRITE_MODE		0x60
+#define KBC_MODE				0x47
+
+void wait_KBC_sendready(void)
 {
 	while(1)
 	{
@@ -25,9 +31,14 @@ void wait_KBC_sendready(void)//等待键盘准备
 	return;
 }
 
-void init_keyboard(void){
+void init_keyboard(struct FIFO32 *fifo, int data0)
+{
+
+	keyfifo = fifo;
+	keydata0 = data0;
+
 	wait_KBC_sendready();
-	io_out8(PORT_KEYCMD,KEYCMD_WRITE_MODE);
+	io_out8(PORT_KEYCMD, KEYCMD_WRITE_MODE);
 	wait_KBC_sendready();
 	io_out8(PORT_KEYDAT, KBC_MODE);
 	return;
