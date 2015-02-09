@@ -1,10 +1,10 @@
 ; naskfunc
 ; TAB=4
 
-[FORMAT "WCOFF"]				; 僆僽僕僃僋僩僼傽僀儖傪嶌傞儌乕僪	
-[INSTRSET "i486p"]				; 486偺柦椷傑偱巊偄偨偄偲偄偆婰弎
-[BITS 32]						; 32價僢僩儌乕僪梡偺婡夿岅傪嶌傜偣傞
-[FILE "naskfunc.nas"]			; 僜乕僗僼傽僀儖柤忣曬
+[FORMAT "WCOFF"]				; オブジェクトファイルを作るモード	
+[INSTRSET "i486p"]				; 486の命令まで使いたいという記述
+[BITS 32]						; 32ビットモード用の機械語を作らせる
+[FILE "naskfunc.nas"]			; ソースファイル名情報
 
 		GLOBAL	_io_hlt, _io_cli, _io_sti, _io_stihlt
 		GLOBAL	_io_in8,  _io_in16,  _io_in32
@@ -12,9 +12,11 @@
 		GLOBAL	_io_load_eflags, _io_store_eflags
 		GLOBAL	_load_gdtr, _load_idtr
 		GLOBAL	_load_cr0, _store_cr0
+		GLOBAL	_load_tr
 		GLOBAL	_asm_inthandler20, _asm_inthandler21
 		GLOBAL	_asm_inthandler27, _asm_inthandler2c
 		GLOBAL	_memtest_sub
+		GLOBAL	_taskswitch4
 		EXTERN	_inthandler20, _inthandler21
 		EXTERN	_inthandler27, _inthandler2c
 
@@ -95,6 +97,35 @@ _load_idtr:		; void load_idtr(int limit, int addr);
 		LIDT	[ESP+6]
 		RET
 
+_load_cr0:		; int load_cr0(void);
+		MOV		EAX,CR0
+		RET
+
+_store_cr0:		; void store_cr0(int cr0);
+		MOV		EAX,[ESP+4]
+		MOV		CR0,EAX
+		RET
+
+_load_tr:		; void load_tr(int tr);
+		LTR		[ESP+4]			; tr
+		RET
+
+_asm_inthandler20:
+		PUSH	ES
+		PUSH	DS
+		PUSHAD
+		MOV		EAX,ESP
+		PUSH	EAX
+		MOV		AX,SS
+		MOV		DS,AX
+		MOV		ES,AX
+		CALL	_inthandler20
+		POP		EAX
+		POPAD
+		POP		DS
+		POP		ES
+		IRETD
+
 _asm_inthandler21:
 		PUSH	ES
 		PUSH	DS
@@ -142,32 +173,7 @@ _asm_inthandler2c:
 		POP		DS
 		POP		ES
 		IRETD
-		
-_asm_inthandler20:
-		PUSH	ES
-		PUSH	DS
-		PUSHAD
-		MOV		EAX,ESP
-		PUSH	EAX
-		MOV		AX,SS
-		MOV		DS,AX
-		MOV		ES,AX
-		CALL	_inthandler20
-		POP		EAX
-		POPAD
-		POP		DS
-		POP		ES
-		IRETD		
-		
-_load_cr0:		;int load_cr0(void);
-		MOV		EAX,CR0
-		RET
-		
-_store_cr0:		;void store_cr0(int cr0);
-		MOV		EAX,[ESP+4]
-		MOV		CR0,EAX
-		RET
-		
+
 _memtest_sub:	; unsigned int memtest_sub(unsigned int start, unsigned int end)
 		PUSH	EDI						; 乮EBX, ESI, EDI 傕巊偄偨偄偺偱乯
 		PUSH	ESI
@@ -199,4 +205,8 @@ mts_fin:
 		POP		EBX
 		POP		ESI
 		POP		EDI
+		RET
+
+_taskswitch4:	; void taskswitch4(void);
+		JMP		4*8:0
 		RET
