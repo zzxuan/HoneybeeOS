@@ -1,0 +1,22 @@
+<NotepadPlus>
+    <Project name="HoneybeeOS">
+        <File name="src\tolset\honeybee\!cons_nt.bat" />
+        <File name="src\tolset\honeybee\asmhead.nas" />
+        <File name="src\tolset\honeybee\bootpack.c" />
+        <File name="src\tolset\honeybee\bootpack.h" />
+        <File name="src\tolset\honeybee\dsctbl.c" />
+        <File name="src\tolset\honeybee\fifo.c" />
+        <File name="src\tolset\honeybee\graphic.c" />
+        <File name="src\tolset\honeybee\haribote.img" />
+        <File name="src\tolset\honeybee\haribote.sys" />
+        <File name="src\tolset\honeybee\int.c" />
+        <File name="src\tolset\honeybee\keyboard.c" />
+        <File name="src\tolset\honeybee\make.bat" />
+        <File name="src\tolset\honeybee\Makefile" />
+        <File name="src\tolset\honeybee\memory.c" />
+        <File name="src\tolset\honeybee\mouse.c" />
+        <File name="src\tolset\honeybee\naskfunc.nas" />
+        <File name="src\tolset\honeybee\sheet.c" />
+        <File name="src\tolset\honeybee\timer.c" />
+    </Project>
+</NotepadPlus>

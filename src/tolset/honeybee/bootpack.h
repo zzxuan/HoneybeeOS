@@ -28,6 +28,7 @@ void asm_inthandler20(void);
 int load_cr0(void);
 void store_cr0(int cr0);
 unsigned int memtest_sub(unsigned int start, unsigned int end);
+void taskswitch3(void);
 void taskswitch4(void);
 
 /* fifo.c */
