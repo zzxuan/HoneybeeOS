@@ -85,6 +85,11 @@ void timer_settime(struct TIMER *timer, unsigned int timeout)
 	}
 }
 
+/*
+*
+*这里产生pit中断
+*
+*/
 void inthandler20(int *esp)//pit中断
 {
 	struct TIMER *timer;
