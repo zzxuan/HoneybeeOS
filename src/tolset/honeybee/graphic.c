@@ -108,12 +108,12 @@ void init_mouse_cursor8(char *mouse, char bc)
 /* マウスカーソルを準備（16x16） */
 {
 	static char cursor[16][16] = {
-		"**************..",
-		"*OOOOOOOOOOO*...",
-		"*OOOOOOOOOO*....",
+		"************....",
 		"*OOOOOOOOO*.....",
 		"*OOOOOOOO*......",
 		"*OOOOOOO*.......",
+		"*OOOOOO*........",
+		"*OOOOOO*........",
 		"*OOOOOOO*.......",
 		"*OOOOOOOO*......",
 		"*OOOO**OOO*.....",

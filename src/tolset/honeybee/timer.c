@@ -9,6 +9,9 @@
 
 struct TIMERCTL timerctl;
 
+extern struct TIMER *mt_timer;//任务切换
+
+
 void init_pit(void)
 {
 	int i;
@@ -92,6 +95,7 @@ void timer_settime(struct TIMER *timer, unsigned int timeout)
 */
 void inthandler20(int *esp)//pit中断
 {
+	char ts = 0;//任务管理标志
 	struct TIMER *timer;
 	io_out8(PIC0_OCW2, 0x60);	//通知PIC
 	timerctl.count++;
@@ -105,11 +109,23 @@ void inthandler20(int *esp)//pit中断
 		}
 
 		timer->flags = TIMER_FLAGS_ALLOC;
-		fifo32_put(timer->fifo, timer->data);
+
+		if(timer != mt_timer){
+			fifo32_put(timer->fifo, timer->data);
+		} else {
+			ts = 1;
+		}
+		
 		timer = timer->next; 
 	}
 	timerctl.t0 = timer;
 	timerctl.next = timer->timeout;
+
+	//任务切换
+	if(ts != 0){
+		mt_taskswitch();
+	}
+	
 	return;
 }
 
