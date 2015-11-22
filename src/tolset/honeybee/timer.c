@@ -9,7 +9,7 @@
 
 struct TIMERCTL timerctl;
 
-extern struct TIMER *mt_timer;//任务切换
+extern struct TIMER *task_timer;//任务切换
 
 
 void init_pit(void)
@@ -110,7 +110,7 @@ void inthandler20(int *esp)//pit中断
 
 		timer->flags = TIMER_FLAGS_ALLOC;
 
-		if(timer != mt_timer){
+		if(timer != task_timer){
 			fifo32_put(timer->fifo, timer->data);
 		} else {
 			ts = 1;
@@ -123,7 +123,7 @@ void inthandler20(int *esp)//pit中断
 
 	//任务切换
 	if(ts != 0){
-		mt_taskswitch();
+		task_switch();
 	}
 	
 	return;

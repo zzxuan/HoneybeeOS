@@ -1,0 +1,20 @@
+---- data Matches (20 in 6 files) ----
+Bootpack.h:void io_out8(int port, int data);
+Bootpack.h:int fifo32_put(struct FIFO32 *fifo, int data);
+Bootpack.h:	int data;
+Bootpack.h:void timer_init(struct TIMER *timer, struct FIFO32 *fifo, int data);
+Fifo.c:int fifo32_put(struct FIFO32 *fifo, int data)//给缓冲区写数据
+Fifo.c:	fifo->buf[fifo->p]=data;
+Fifo.c:	int data;
+Fifo.c:	data =fifo->buf[fifo->q];
+Fifo.c:	return data;
+Graphic.c:	char *p, d /* data */;
+Keyboard.c:	int data;
+Keyboard.c:	data = io_in8(PORT_KEYDAT);
+Keyboard.c:	fifo32_put(keyfifo, data + keydata0);
+Mouse.c:	int data;
+Mouse.c:	data = io_in8(PORT_KEYDAT);
+Mouse.c:	fifo32_put(mousefifo, data + mousedata0);
+Timer.c:void timer_init(struct TIMER *timer, struct FIFO32 *fifo, int data)
+Timer.c:	timer->data = data;
+Timer.c:			fifo32_put(timer->fifo, timer->data);
